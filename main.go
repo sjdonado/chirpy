@@ -1,18 +1,24 @@
 package main
 
 import (
+	"chirpy/middleware"
+	"io"
 	"log"
 	"net/http"
-	"io"
 )
 
 func main() {
 	mux := http.NewServeMux()
-
 	filepathRoot := http.Dir(".")
 	port := "8080"
 
-	mux.Handle("/app/", http.StripPrefix("/app", http.FileServer(filepathRoot)))
+	cfg := &middleware.ApiConfig{}
+
+	mux.Handle("/metrics", cfg.GetMetrics())
+	mux.Handle("/reset", cfg.ResetMetrics())
+
+	mux.Handle("/app/", cfg.MiddlewareMetricsInc(http.StripPrefix("/app", http.FileServer(filepathRoot))))
+
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
@@ -22,7 +28,7 @@ func main() {
 	})
 
 	s := &http.Server{
-		Addr: ":" + port,
+		Addr:    ":" + port,
 		Handler: mux,
 	}
 
