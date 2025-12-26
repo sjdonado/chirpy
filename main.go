@@ -14,12 +14,12 @@ func main() {
 
 	cfg := &middleware.ApiConfig{}
 
-	mux.Handle("/metrics", cfg.GetMetrics())
-	mux.Handle("/reset", cfg.ResetMetrics())
+	mux.Handle("GET /metrics", cfg.GetMetrics())
+	mux.Handle("POST /reset", cfg.ResetMetrics())
 
 	mux.Handle("/app/", cfg.MiddlewareMetricsInc(http.StripPrefix("/app", http.FileServer(filepathRoot))))
 
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
 		if _, err := io.WriteString(w, "OK\n"); err != nil {
