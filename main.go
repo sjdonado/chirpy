@@ -14,8 +14,8 @@ func main() {
 
 	cfg := &middleware.ApiConfig{}
 
-	mux.Handle("GET /api/metrics", cfg.GetMetrics())
-	mux.Handle("POST /api/reset", cfg.ResetMetrics())
+	mux.Handle("GET /admin/metrics", cfg.GetMetrics())
+	mux.Handle("POST /admin/reset", cfg.ResetMetrics())
 
 	mux.Handle("/app/", cfg.MiddlewareMetricsInc(http.StripPrefix("/app", http.FileServer(filepathRoot))))
 
