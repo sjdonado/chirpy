@@ -1,8 +1,8 @@
 package main
 
 import (
+	"chirpy/api"
 	"chirpy/middleware"
-	"io"
 	"log"
 	"net/http"
 )
@@ -19,13 +19,8 @@ func main() {
 
 	mux.Handle("/app/", cfg.MiddlewareMetricsInc(http.StripPrefix("/app", http.FileServer(filepathRoot))))
 
-	mux.HandleFunc("GET /api/healthz", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.WriteHeader(http.StatusOK)
-		if _, err := io.WriteString(w, "OK\n"); err != nil {
-			log.Fatal("Response could not be written")
-		}
-	})
+	mux.HandleFunc("GET /api/healthz", api.GetHealthz)
+	mux.HandleFunc("POST /api/validate_chirp", api.PostValidateChirp)
 
 	s := &http.Server{
 		Addr:    ":" + port,
