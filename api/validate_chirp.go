@@ -5,7 +5,10 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strings"
 )
+
+var blacklist = []string{"kerfuffle", "sharbert", "fornax"}
 
 func PostValidateChirp(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
@@ -26,5 +29,20 @@ func PostValidateChirp(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	lib.RespondWithJSON(w, http.StatusOK, map[string]bool{"valid": true})
+	response := map[string]string{
+		"cleaned_body": replaceNotAllowedWords(payload.Body),
+	}
+
+	lib.RespondWithJSON(w, http.StatusOK, response)
+}
+
+func replaceNotAllowedWords(body string) string {
+	for word := range strings.SplitSeq(body, " ") {
+		for _, badWord := range blacklist {
+			if strings.ToLower(word) == badWord {
+				body = strings.ReplaceAll(body, word, "****")
+			}
+		}
+	}
+	return body
 }
