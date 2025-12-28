@@ -60,6 +60,12 @@ func (cfg *ApiConfig) GetMetrics() http.Handler {
 
 func (cfg *ApiConfig) ResetMetrics() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if os.Getenv("PLATFORM") == "dev" {
+			err := cfg.db.DeleteAllUsers(r.Context())
+			if err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+			}
+		}
 		w.WriteHeader(http.StatusOK)
 		cfg.fileserverHits.Store(0)
 	})
