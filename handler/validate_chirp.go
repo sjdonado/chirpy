@@ -1,4 +1,4 @@
-package api
+package handler
 
 import (
 	"chirpy/lib"
@@ -11,9 +11,9 @@ import (
 var blacklist = []string{"kerfuffle", "sharbert", "fornax"}
 
 func PostValidateChirp(w http.ResponseWriter, r *http.Request) {
+	body := json.NewDecoder(r.Body)
 	defer r.Body.Close()
 
-	body := json.NewDecoder(r.Body)
 	payload := struct {
 		Body string `json:"body"`
 	}{}

@@ -1,17 +1,31 @@
-package middleware
+package handler
 
 import (
 	"chirpy/internal/database"
+	"database/sql"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"os"
 	"sync/atomic"
 )
 
 type ApiConfig struct {
 	fileserverHits atomic.Int32
-	Queries        *database.Queries
+	db             *database.Queries
+}
+
+func NewApiConfig() *ApiConfig {
+	dbURL := os.Getenv("DB_URL")
+
+	db, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	return &ApiConfig{db: database.New(db)}
 }
 
 func (cfg *ApiConfig) MiddlewareMetricsInc(next http.Handler) http.Handler {

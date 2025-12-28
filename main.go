@@ -1,13 +1,9 @@
 package main
 
 import (
-	"chirpy/api"
-	"chirpy/internal/database"
-	"chirpy/middleware"
-	"database/sql"
+	"chirpy/handler"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
@@ -20,24 +16,15 @@ func main() {
 	filepathRoot := http.Dir(".")
 	port := "8080"
 
-	dbURL := os.Getenv("DB_URL")
-	db, err := sql.Open("postgres", dbURL)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
-	cfg := &middleware.ApiConfig{
-		Queries: database.New(db),
-	}
+	cfg := handler.NewApiConfig()
 
 	mux.Handle("GET /admin/metrics", cfg.GetMetrics())
 	mux.Handle("POST /admin/reset", cfg.ResetMetrics())
 
 	mux.Handle("/app/", cfg.MiddlewareMetricsInc(http.StripPrefix("/app", http.FileServer(filepathRoot))))
 
-	mux.HandleFunc("GET /api/healthz", api.GetHealthz)
-	mux.HandleFunc("POST /api/validate_chirp", api.PostValidateChirp)
+	mux.HandleFunc("GET /api/healthz", handler.GetHealthz)
+	mux.HandleFunc("POST /api/validate_chirp", handler.PostValidateChirp)
 
 	s := &http.Server{
 		Addr:    ":" + port,
