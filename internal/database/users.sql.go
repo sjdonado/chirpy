@@ -10,8 +10,8 @@ import (
 )
 
 const createUser = `-- name: CreateUser :one
-INSERT INTO users (email, created_at, updated_at)
-VALUES ($1, NOW(), NOW())
+INSERT INTO users (email)
+VALUES ($1)
 RETURNING id, email, created_at, updated_at
 `
 

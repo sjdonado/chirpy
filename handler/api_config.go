@@ -2,6 +2,7 @@ package handler
 
 import (
 	"chirpy/internal/database"
+	"chirpy/lib"
 	"chirpy/serializer"
 	"database/sql"
 	"encoding/json"
@@ -10,7 +11,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"sync/atomic"
+
+	"github.com/google/uuid"
 )
 
 type ApiConfig struct {
@@ -63,7 +67,7 @@ func (cfg *ApiConfig) ResetMetrics() http.Handler {
 		if os.Getenv("PLATFORM") == "dev" {
 			err := cfg.db.DeleteAllUsers(r.Context())
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusInternalServerError)
+				lib.RespondWithError(w, http.StatusInternalServerError, err.Error())
 			}
 		}
 		w.WriteHeader(http.StatusOK)
@@ -81,22 +85,60 @@ func (cfg *ApiConfig) CreateUser() http.Handler {
 		}{}
 
 		if err := body.Decode(&payload); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			lib.RespondWithError(w, http.StatusBadRequest, err.Error())
 			return
 		}
 
 		user, err := cfg.db.CreateUser(r.Context(), payload.Email)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			lib.RespondWithError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
 
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusCreated)
+		lib.RespondWithJSON(w, http.StatusCreated, serializer.SerializeUser(user))
+	})
+}
 
-		if err := json.NewEncoder(w).Encode(serializer.SerializeUser(user)); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+var blacklist = []string{"kerfuffle", "sharbert", "fornax"}
+
+func replaceNotAllowedWords(body string) string {
+	for word := range strings.SplitSeq(body, " ") {
+		for _, badWord := range blacklist {
+			if strings.ToLower(word) == badWord {
+				body = strings.ReplaceAll(body, word, "****")
+			}
+		}
+	}
+	return body
+}
+
+func (cfg *ApiConfig) CreateChirp() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body := json.NewDecoder(r.Body)
+		defer r.Body.Close()
+
+		payload := struct {
+			Body   string    `json:"body"`
+			UserID uuid.UUID `json:"user_id"`
+		}{}
+
+		if err := body.Decode(&payload); err != nil {
+			log.Printf("Error decoding JSON: %v", err)
+			lib.RespondWithError(w, http.StatusBadRequest, "Something went wrong")
 			return
 		}
+
+		if len(payload.Body) > 140 {
+			lib.RespondWithError(w, http.StatusBadRequest, "Chirp is too long")
+			return
+		}
+
+		chirp, err := cfg.db.CreateChirp(r.Context(), database.CreateChirpParams{Body: replaceNotAllowedWords(payload.Body), UserID: payload.UserID})
+		if err != nil {
+			lib.RespondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		lib.RespondWithJSON(w, http.StatusCreated, serializer.SerializeChirp(chirp))
 	})
 }

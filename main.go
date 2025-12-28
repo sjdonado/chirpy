@@ -28,9 +28,9 @@ func main() {
 	mux.Handle("/app/", cfg.MiddlewareMetricsInc(http.StripPrefix("/app", http.FileServer(filepathRoot))))
 
 	mux.Handle("POST /api/users", cfg.CreateUser())
+	mux.Handle("POST /api/chirps", cfg.CreateChirp())
 
 	mux.HandleFunc("GET /api/healthz", handler.GetHealthz)
-	mux.HandleFunc("POST /api/validate_chirp", handler.PostValidateChirp)
 
 	s := &http.Server{
 		Addr:    ":" + port,
