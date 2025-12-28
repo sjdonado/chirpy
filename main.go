@@ -2,17 +2,34 @@ package main
 
 import (
 	"chirpy/api"
+	"chirpy/internal/database"
 	"chirpy/middleware"
+	"database/sql"
 	"log"
 	"net/http"
+	"os"
+
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
 
 func main() {
+	godotenv.Load()
+
 	mux := http.NewServeMux()
 	filepathRoot := http.Dir(".")
 	port := "8080"
 
-	cfg := &middleware.ApiConfig{}
+	dbURL := os.Getenv("DB_URL")
+	db, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer db.Close()
+
+	cfg := &middleware.ApiConfig{
+		Queries: database.New(db),
+	}
 
 	mux.Handle("GET /admin/metrics", cfg.GetMetrics())
 	mux.Handle("POST /admin/reset", cfg.ResetMetrics())

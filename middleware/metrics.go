@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"chirpy/internal/database"
 	"fmt"
 	"io"
 	"log"
@@ -10,6 +11,7 @@ import (
 
 type ApiConfig struct {
 	fileserverHits atomic.Int32
+	Queries        *database.Queries
 }
 
 func (cfg *ApiConfig) MiddlewareMetricsInc(next http.Handler) http.Handler {
