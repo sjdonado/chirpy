@@ -16,12 +16,18 @@ func main() {
 	filepathRoot := http.Dir(".")
 	port := "8080"
 
-	cfg := handler.NewApiConfig()
+	cfg, cleanup, err := handler.NewApiConfig()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer cleanup()
 
 	mux.Handle("GET /admin/metrics", cfg.GetMetrics())
 	mux.Handle("POST /admin/reset", cfg.ResetMetrics())
 
 	mux.Handle("/app/", cfg.MiddlewareMetricsInc(http.StripPrefix("/app", http.FileServer(filepathRoot))))
+
+	mux.Handle("POST /api/users", cfg.CreateUser())
 
 	mux.HandleFunc("GET /api/healthz", handler.GetHealthz)
 	mux.HandleFunc("POST /api/validate_chirp", handler.PostValidateChirp)
