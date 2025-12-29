@@ -110,6 +110,35 @@ func (cfg *ApiConfig) CreateUser() http.Handler {
 	})
 }
 
+func (cfg *ApiConfig) Login() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body := json.NewDecoder(r.Body)
+		defer r.Body.Close()
+
+		payload := struct {
+			Email    string `json:"email"`
+			Password string `json:"password"`
+		}{}
+
+		if err := body.Decode(&payload); err != nil {
+			lib.RespondWithError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		user, err := cfg.db.GetUserByEmail(r.Context(), payload.Email)
+		if err != nil {
+			lib.RespondWithError(w, http.StatusUnauthorized, "Incorrect email or password")
+			return
+		}
+
+		if success, err := auth.CheckPasswordHash(payload.Password, user.HashedPassword); err != nil || !success {
+			lib.RespondWithError(w, http.StatusUnauthorized, "Incorrect email or password")
+			return
+		}
+
+		lib.RespondWithJSON(w, http.StatusOK, serializer.SerializeUser(user))
+	})
+}
+
 var blacklist = []string{"kerfuffle", "sharbert", "fornax"}
 
 func replaceNotAllowedWords(body string) string {

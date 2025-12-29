@@ -28,6 +28,7 @@ func main() {
 	mux.Handle("/app/", cfg.MiddlewareMetricsInc(http.StripPrefix("/app", http.FileServer(filepathRoot))))
 
 	mux.Handle("POST /api/users", cfg.CreateUser())
+	mux.Handle("POST /api/login", cfg.Login())
 
 	mux.Handle("POST /api/chirps", cfg.CreateChirp())
 	mux.Handle("GET /api/chirps", cfg.GetAllChirps())
