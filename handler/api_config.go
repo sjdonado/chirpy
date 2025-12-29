@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"chirpy/internal/auth"
 	"chirpy/internal/database"
 	"chirpy/lib"
 	"chirpy/serializer"
@@ -81,7 +82,8 @@ func (cfg *ApiConfig) CreateUser() http.Handler {
 		defer r.Body.Close()
 
 		payload := struct {
-			Email string `json:"email"`
+			Email    string `json:"email"`
+			Password string `json:"password"`
 		}{}
 
 		if err := body.Decode(&payload); err != nil {
@@ -89,7 +91,16 @@ func (cfg *ApiConfig) CreateUser() http.Handler {
 			return
 		}
 
-		user, err := cfg.db.CreateUser(r.Context(), payload.Email)
+		hashedPassword, err := auth.HashPassword(payload.Password)
+		if err != nil {
+			lib.RespondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		user, err := cfg.db.CreateUser(r.Context(), database.CreateUserParams{
+			Email:          payload.Email,
+			HashedPassword: hashedPassword,
+		})
 		if err != nil {
 			lib.RespondWithError(w, http.StatusInternalServerError, err.Error())
 			return
