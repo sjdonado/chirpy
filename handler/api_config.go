@@ -142,3 +142,20 @@ func (cfg *ApiConfig) CreateChirp() http.Handler {
 		lib.RespondWithJSON(w, http.StatusCreated, serializer.SerializeChirp(chirp))
 	})
 }
+
+func (cfg *ApiConfig) GetAllChirps() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		chirps, err := cfg.db.GetAllChirps(r.Context())
+		if err != nil {
+			lib.RespondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		serializedChirps := []serializer.Chirp{}
+		for _, chirp := range chirps {
+			serializedChirps = append(serializedChirps, serializer.SerializeChirp(chirp))
+		}
+
+		lib.RespondWithJSON(w, http.StatusOK, serializedChirps)
+	})
+}
