@@ -31,6 +31,7 @@ func main() {
 
 	mux.Handle("POST /api/chirps", cfg.CreateChirp())
 	mux.Handle("GET /api/chirps", cfg.GetAllChirps())
+	mux.Handle("GET /api/chirps/{id}", cfg.GetOneChirp())
 
 	mux.HandleFunc("GET /api/healthz", handler.GetHealthz)
 

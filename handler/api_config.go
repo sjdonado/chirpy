@@ -159,3 +159,26 @@ func (cfg *ApiConfig) GetAllChirps() http.Handler {
 		lib.RespondWithJSON(w, http.StatusOK, serializedChirps)
 	})
 }
+
+func (cfg *ApiConfig) GetOneChirp() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		id, err := uuid.Parse(r.PathValue("id"))
+		if err != nil {
+			lib.RespondWithError(w, http.StatusBadRequest, "Invalid ID")
+			return
+		}
+
+		chirp, err := cfg.db.GetOneChirp(r.Context(), id)
+		if err != nil {
+			switch err {
+			case sql.ErrNoRows:
+				lib.RespondWithError(w, http.StatusNotFound, "Chirp not found")
+			default:
+				lib.RespondWithError(w, http.StatusNotFound, err.Error())
+			}
+			return
+		}
+
+		lib.RespondWithJSON(w, http.StatusOK, serializer.SerializeChirp(chirp))
+	})
+}
