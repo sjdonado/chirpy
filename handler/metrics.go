@@ -3,28 +3,21 @@ package handler
 import (
 	"chirpy/internal/database"
 	"chirpy/lib"
+	"chirpy/middleware"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
-	"sync/atomic"
 )
 
 type MetricsHandler struct {
-	fileserverHits atomic.Int32
-	queries        *database.Queries
+	queries    *database.Queries
+	middleware *middleware.MetricMiddleware
 }
 
-func NewMetricsHandler(queries *database.Queries) *MetricsHandler {
+func NewMetricsHandler(queries *database.Queries, middleware *middleware.MetricMiddleware) *MetricsHandler {
 	return &MetricsHandler{queries: queries}
-}
-
-func (h *MetricsHandler) MiddlewareMetricsInc(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		h.fileserverHits.Add(1)
-		next.ServeHTTP(w, r)
-	})
 }
 
 func (h *MetricsHandler) GetMetrics() http.Handler {
@@ -37,7 +30,7 @@ func (h *MetricsHandler) GetMetrics() http.Handler {
 		    <h1>Welcome, Chirpy Admin</h1>
 		    <p>Chirpy has been visited %d times!</p>
 		  </body>
-		</html>`, h.fileserverHits.Load())
+		</html>`, h.middleware.GetFileServerHits())
 		if _, err := io.WriteString(w, response); err != nil {
 			log.Fatal("Response could not be written")
 		}
@@ -53,6 +46,6 @@ func (h *MetricsHandler) ResetMetrics() http.Handler {
 			}
 		}
 		w.WriteHeader(http.StatusOK)
-		h.fileserverHits.Store(0)
+		h.middleware.ResetFileServerHits()
 	})
 }

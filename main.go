@@ -3,6 +3,7 @@ package main
 import (
 	"chirpy/handler"
 	"chirpy/internal/database"
+	"chirpy/middleware"
 	"database/sql"
 	"log"
 	"net/http"
@@ -27,14 +28,16 @@ func main() {
 
 	queries := database.New(db)
 
-	metrics_handler := handler.NewMetricsHandler(queries)
+	metric_middleware := middleware.NewMetricMiddleware()
+
+	metrics_handler := handler.NewMetricsHandler(queries, metric_middleware)
 	users_handler := handler.NewUsersHandler(queries)
 	chirps_handler := handler.NewChirpsHandler(queries)
 
 	mux.Handle("GET /admin/metrics", metrics_handler.GetMetrics())
 	mux.Handle("POST /admin/reset", metrics_handler.ResetMetrics())
 
-	mux.Handle("/app/", metrics_handler.MiddlewareMetricsInc(http.StripPrefix("/app", http.FileServer(filepathRoot))))
+	mux.Handle("/app/", metric_middleware.FileServerHits(http.StripPrefix("/app", http.FileServer(filepathRoot))))
 
 	mux.Handle("POST /api/users", users_handler.CreateUser())
 	mux.Handle("POST /api/login", users_handler.Login())
