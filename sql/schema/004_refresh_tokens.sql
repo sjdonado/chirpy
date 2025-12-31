@@ -1,11 +1,11 @@
 -- +goose Up
-CREATE TABLE chirps (
-	id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+CREATE TABLE refresh_tokens (
+	token TEXT PRIMARY KEY,
 	user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-	body TEXT NOT NULL,
+	expires_at TIMESTAMP,
 	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- +goose Down
-DROP TABLE chirps;
+DROP TABLE refresh_tokens;
