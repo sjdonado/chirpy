@@ -59,9 +59,8 @@ func (h *UsersHandler) Login() http.Handler {
 		defer r.Body.Close()
 
 		payload := struct {
-			Email            string `json:"email"`
-			Password         string `json:"password"`
-			ExpiresInSeconds *int   `json:"expires_in_seconds,omitempty"`
+			Email    string `json:"email"`
+			Password string `json:"password"`
 		}{}
 
 		if err := body.Decode(&payload); err != nil {
@@ -79,17 +78,27 @@ func (h *UsersHandler) Login() http.Handler {
 			return
 		}
 
-		expiresIn := time.Hour
-		if payload.ExpiresInSeconds != nil {
-			expiresIn = time.Duration(*payload.ExpiresInSeconds) * time.Second
+		token, err := auth.MakeJWT(user.ID, os.Getenv("JWT_SECRET"), time.Hour)
+		if err != nil {
+			api.RespondWithError(w, http.StatusInternalServerError, err.Error())
+			return
 		}
-
-		token, err := auth.MakeJWT(user.ID, os.Getenv("JWT_SECRET"), expiresIn)
+		refreshToken, err := auth.MakeRefreshToken()
 		if err != nil {
 			api.RespondWithError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
 
-		api.RespondWithJSON(w, http.StatusOK, serializer.SerializeLoginResponse(user, token))
+		_, err = h.queries.CreateRefreshToken(r.Context(), database.CreateRefreshTokenParams{
+			UserID:    user.ID,
+			Token:     refreshToken,
+			ExpiresAt: time.Now().Add(60 * 24 * time.Hour),
+		})
+		if err != nil {
+			api.RespondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		api.RespondWithJSON(w, http.StatusOK, serializer.SerializeLoginResponse(user, token, refreshToken))
 	})
 }

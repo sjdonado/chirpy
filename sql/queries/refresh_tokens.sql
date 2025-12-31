@@ -1,5 +1,5 @@
 -- name: CreateRefreshToken :one
-INSERT INTO refresh_tokens (user_id, token) VALUES ($1, $2) RETURNING token;
+INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES ($1, $2, $3) RETURNING token;
 
 -- name: RevokeRefreshToken :exec
 UPDATE refresh_tokens SET revoked_at = NOW() WHERE token = $1;
