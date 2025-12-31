@@ -46,6 +46,7 @@ func main() {
 	mux.Handle("POST /api/revoke", auth_handler.RevokeToken())
 
 	mux.Handle("POST /api/users", users_handler.CreateUser())
+	mux.Handle("PUT /api/users", auth_middleware.Authenticated(users_handler.UpdateUser()))
 
 	mux.Handle("POST /api/chirps", auth_middleware.Authenticated(chirps_handler.CreateChirp()))
 	mux.Handle("GET /api/chirps", auth_middleware.Authenticated(chirps_handler.GetAllChirps()))

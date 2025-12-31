@@ -57,7 +57,7 @@ func (h *ChirpsHandler) CreateChirp() http.Handler {
 
 		userID, err := middleware.GetUserIDFromContext(r.Context())
 		if err != nil {
-			api.RespondWithError(w, http.StatusBadRequest, "User ID not found in context")
+			api.RespondWithError(w, http.StatusInternalServerError, "User ID not found in context")
 			return
 		}
 
