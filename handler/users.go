@@ -98,6 +98,17 @@ func (h *UsersHandler) UpdateUser() http.HandlerFunc {
 
 func (h *UsersHandler) UpgradeUser() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		apiKey, err := api.GetAPIKey(r.Header)
+		if err != nil {
+			api.RespondWithError(w, http.StatusUnauthorized, err.Error())
+			return
+		}
+
+		if apiKey != h.cfg.PolkaKey {
+			api.RespondWithError(w, http.StatusUnauthorized, "Invalid ApiKey")
+			return
+		}
+
 		body := json.NewDecoder(r.Body)
 		defer r.Body.Close()
 
