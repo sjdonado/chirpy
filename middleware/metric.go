@@ -1,9 +1,15 @@
 package middleware
 
 import (
+	"context"
+	"errors"
 	"net/http"
 	"sync/atomic"
 )
+
+type metricCtxKey string
+
+const fileServerHitsKey metricCtxKey = "fileServerHitsKey"
 
 type MetricMiddleware struct {
 	fileserverHits atomic.Int32
@@ -16,14 +22,15 @@ func NewMetricMiddleware() *MetricMiddleware {
 func (m *MetricMiddleware) FileServerHits(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		m.fileserverHits.Add(1)
-		next.ServeHTTP(w, r)
+		ctx := context.WithValue(r.Context(), fileServerHitsKey, &m.fileserverHits)
+		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
-func (m *MetricMiddleware) GetFileServerHits() int32 {
-	return m.fileserverHits.Load()
-}
-
-func (m *MetricMiddleware) ResetFileServerHits() {
-	m.fileserverHits.Store(0)
+func GetFileServerHitsFromContext(ctx context.Context) (*atomic.Int32, error) {
+	fileserverHits, ok := ctx.Value(fileServerHitsKey).(*atomic.Int32)
+	if !ok {
+		return nil, errors.New("file server hits not found in context")
+	}
+	return fileserverHits, nil
 }

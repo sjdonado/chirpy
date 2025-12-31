@@ -31,12 +31,12 @@ func main() {
 	metric_middleware := middleware.NewMetricMiddleware()
 	auth_middleware := middleware.NewAuthMiddleware(queries)
 
-	metrics_handler := handler.NewMetricsHandler(queries, metric_middleware)
+	metrics_handler := handler.NewMetricsHandler(queries)
 	users_handler := handler.NewUsersHandler(queries)
 	chirps_handler := handler.NewChirpsHandler(queries)
 
-	mux.Handle("GET /admin/metrics", metrics_handler.GetMetrics())
-	mux.Handle("POST /admin/reset", metrics_handler.ResetMetrics())
+	mux.Handle("GET /admin/metrics", metric_middleware.FileServerHits(metrics_handler.GetMetrics()))
+	mux.Handle("POST /admin/reset", metric_middleware.FileServerHits(metrics_handler.ResetMetrics()))
 
 	mux.Handle("/app/", metric_middleware.FileServerHits(http.StripPrefix("/app", http.FileServer(filepathRoot))))
 
