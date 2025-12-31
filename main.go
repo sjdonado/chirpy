@@ -58,7 +58,7 @@ func main() {
 	})
 
 	r.Route("/api/chirps", func(r chi.Router) {
-		r.Get("/", chirps_handler.FilterChirps())
+		r.Get("/", chirps_handler.QueryChirps())
 		r.Get("/{id}", chirps_handler.GetChirp())
 		r.With(auth_middleware.Authenticated).Post("/", chirps_handler.CreateChirp())
 		r.With(auth_middleware.Authenticated).Delete("/{id}", chirps_handler.DeleteChrip())

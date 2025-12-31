@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"sort"
 	"strings"
 
 	"github.com/google/uuid"
@@ -71,20 +72,36 @@ func (h *ChirpsHandler) CreateChirp() http.HandlerFunc {
 	}
 }
 
-func (h *ChirpsHandler) FilterChirps() http.HandlerFunc {
+func (h *ChirpsHandler) QueryChirps() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		s := r.URL.Query().Get("author_id")
-		user_id, err := uuid.Parse(s)
-		if s != "" && err != nil {
-			api.RespondWithError(w, http.StatusBadRequest, "Invalid author ID")
-			return
+		qSort := "asc"
+		if sort := r.URL.Query().Get("sort"); sort != "" {
+			qSort = sort
 		}
 
-		chirps, err := h.queries.FilterChirps(r.Context(), user_id)
+		var qUserID uuid.NullUUID
+		if authorID := r.URL.Query().Get("author_id"); authorID != "" {
+			id, err := uuid.Parse(authorID)
+			if err != nil {
+				api.RespondWithError(w, http.StatusBadRequest, "Invalid author ID")
+				return
+			}
+			qUserID = uuid.NullUUID{UUID: id, Valid: true}
+		}
+
+		chirps, err := h.queries.QueryChirps(r.Context(), qUserID)
 		if err != nil {
 			api.RespondWithError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
+
+		sort.Slice(chirps, func(i, j int) bool {
+			if qSort == "desc" {
+				return chirps[i].CreatedAt.After(chirps[j].CreatedAt)
+			} else {
+				return chirps[i].CreatedAt.Before(chirps[j].CreatedAt)
+			}
+		})
 
 		serializedChirps := []serializer.Chirp{}
 		for _, chirp := range chirps {
