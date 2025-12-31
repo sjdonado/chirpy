@@ -18,8 +18,8 @@ func NewUsersHandler(queries *database.Queries) *UsersHandler {
 	return &UsersHandler{queries: queries}
 }
 
-func (h *UsersHandler) CreateUser() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func (h *UsersHandler) CreateUser() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		body := json.NewDecoder(r.Body)
 		defer r.Body.Close()
 
@@ -49,11 +49,11 @@ func (h *UsersHandler) CreateUser() http.Handler {
 		}
 
 		api.RespondWithJSON(w, http.StatusCreated, serializer.SerializeUser(user))
-	})
+	}
 }
 
-func (h *UsersHandler) UpdateUser() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func (h *UsersHandler) UpdateUser() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		body := json.NewDecoder(r.Body)
 		defer r.Body.Close()
 
@@ -90,5 +90,5 @@ func (h *UsersHandler) UpdateUser() http.Handler {
 		}
 
 		api.RespondWithJSON(w, http.StatusOK, serializer.SerializeUser(user))
-	})
+	}
 }

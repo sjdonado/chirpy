@@ -19,8 +19,8 @@ func NewMetricsHandler(queries *database.Queries) *MetricsHandler {
 	return &MetricsHandler{queries: queries}
 }
 
-func (h *MetricsHandler) GetMetrics() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func (h *MetricsHandler) GetMetrics() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		fileserverHits, err := middleware.GetFileServerHitsFromContext(r.Context())
 		if err != nil {
 			log.Fatal("Failed to get file server hits")
@@ -38,11 +38,11 @@ func (h *MetricsHandler) GetMetrics() http.Handler {
 		if _, err := io.WriteString(w, response); err != nil {
 			log.Fatal("Response could not be written")
 		}
-	})
+	}
 }
 
-func (h *MetricsHandler) ResetMetrics() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func (h *MetricsHandler) ResetMetrics() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		if os.Getenv("PLATFORM") == "dev" {
 			err := h.queries.DeleteAllUsers(r.Context())
 			if err != nil {
@@ -56,5 +56,5 @@ func (h *MetricsHandler) ResetMetrics() http.Handler {
 
 		fileserverHits.Store(0)
 		w.WriteHeader(http.StatusOK)
-	})
+	}
 }

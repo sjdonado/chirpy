@@ -35,8 +35,8 @@ func replaceNotAllowedWords(body string) string {
 	return body
 }
 
-func (h *ChirpsHandler) CreateChirp() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func (h *ChirpsHandler) CreateChirp() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		body := json.NewDecoder(r.Body)
 		defer r.Body.Close()
 
@@ -68,11 +68,11 @@ func (h *ChirpsHandler) CreateChirp() http.Handler {
 		}
 
 		api.RespondWithJSON(w, http.StatusCreated, serializer.SerializeChirp(chirp))
-	})
+	}
 }
 
-func (h *ChirpsHandler) GetAllChirps() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func (h *ChirpsHandler) GetAllChirps() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		chirps, err := h.queries.GetAllChirps(r.Context())
 		if err != nil {
 			api.RespondWithError(w, http.StatusInternalServerError, err.Error())
@@ -85,11 +85,11 @@ func (h *ChirpsHandler) GetAllChirps() http.Handler {
 		}
 
 		api.RespondWithJSON(w, http.StatusOK, serializedChirps)
-	})
+	}
 }
 
-func (h *ChirpsHandler) GetOneChirp() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func (h *ChirpsHandler) GetOneChirp() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(r.PathValue("id"))
 		if err != nil {
 			api.RespondWithError(w, http.StatusBadRequest, "Invalid ID")
@@ -108,5 +108,5 @@ func (h *ChirpsHandler) GetOneChirp() http.Handler {
 		}
 
 		api.RespondWithJSON(w, http.StatusOK, serializer.SerializeChirp(chirp))
-	})
+	}
 }

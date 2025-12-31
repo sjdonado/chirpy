@@ -19,8 +19,8 @@ func NewAuthHandler(queries *database.Queries) *AuthHandler {
 	return &AuthHandler{queries: queries}
 }
 
-func (h *AuthHandler) Login() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) Login() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		body := json.NewDecoder(r.Body)
 		defer r.Body.Close()
 
@@ -66,11 +66,11 @@ func (h *AuthHandler) Login() http.Handler {
 		}
 
 		api.RespondWithJSON(w, http.StatusOK, serializer.SerializeLoginResponse(user, accessToken, refreshToken))
-	})
+	}
 }
 
-func (h *AuthHandler) RefreshToken() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) RefreshToken() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		rawRefreshToken, err := api.GetBearerToken(r.Header)
 		if err != nil {
 			api.RespondWithError(w, http.StatusUnauthorized, err.Error())
@@ -102,11 +102,11 @@ func (h *AuthHandler) RefreshToken() http.Handler {
 		api.RespondWithJSON(w, http.StatusOK, map[string]string{
 			"token": accessToken,
 		})
-	})
+	}
 }
 
-func (h *AuthHandler) RevokeToken() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func (h *AuthHandler) RevokeToken() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		rawRefreshToken, err := api.GetBearerToken(r.Header)
 		if err != nil {
 			api.RespondWithError(w, http.StatusUnauthorized, err.Error())
@@ -132,5 +132,5 @@ func (h *AuthHandler) RevokeToken() http.Handler {
 		}
 
 		w.WriteHeader(http.StatusNoContent)
-	})
+	}
 }

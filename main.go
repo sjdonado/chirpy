@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/go-chi/chi/v5"
+
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
@@ -16,7 +18,6 @@ import (
 func main() {
 	godotenv.Load()
 
-	mux := http.NewServeMux()
 	filepathRoot := http.Dir(".")
 	port := "8080"
 
@@ -36,27 +37,37 @@ func main() {
 	users_handler := handler.NewUsersHandler(queries)
 	chirps_handler := handler.NewChirpsHandler(queries)
 
-	mux.Handle("GET /admin/metrics", metric_middleware.FileServerHits(metrics_handler.GetMetrics()))
-	mux.Handle("POST /admin/reset", metric_middleware.FileServerHits(metrics_handler.ResetMetrics()))
+	r := chi.NewRouter()
 
-	mux.Handle("/app/", metric_middleware.FileServerHits(http.StripPrefix("/app", http.FileServer(filepathRoot))))
+	r.Handle("/app/", metric_middleware.FileServerHits(http.StripPrefix("/app", http.FileServer(filepathRoot))))
 
-	mux.Handle("POST /api/login", auth_handler.Login())
-	mux.Handle("POST /api/refresh", auth_handler.RefreshToken())
-	mux.Handle("POST /api/revoke", auth_handler.RevokeToken())
+	r.Route("/admin", func(r chi.Router) {
+		r.Use(metric_middleware.FileServerHits)
+		r.Get("/metrics", metrics_handler.GetMetrics())
+		r.Post("/reset", metrics_handler.ResetMetrics())
+	})
 
-	mux.Handle("POST /api/users", users_handler.CreateUser())
-	mux.Handle("PUT /api/users", auth_middleware.Authenticated(users_handler.UpdateUser()))
+	r.Get("api/healthz", handler.GetHealthz)
 
-	mux.Handle("POST /api/chirps", auth_middleware.Authenticated(chirps_handler.CreateChirp()))
-	mux.Handle("GET /api/chirps", auth_middleware.Authenticated(chirps_handler.GetAllChirps()))
-	mux.Handle("GET /api/chirps/{id}", auth_middleware.Authenticated(chirps_handler.GetOneChirp()))
+	r.Post("/api/login", auth_handler.Login())
+	r.Post("/api/refresh", auth_handler.RefreshToken())
+	r.Post("/api/revoke", auth_handler.RevokeToken())
 
-	mux.HandleFunc("GET /api/healthz", handler.GetHealthz)
+	r.Route("/api/users", func(r chi.Router) {
+		r.Post("/", users_handler.CreateUser())
+		r.With(auth_middleware.Authenticated).Put("/", users_handler.UpdateUser())
+	})
+
+	r.Route("/api/chirps", func(r chi.Router) {
+		r.Use(auth_middleware.Authenticated)
+		r.Post("/", chirps_handler.CreateChirp())
+		r.Get("/", chirps_handler.GetAllChirps())
+		r.Get("/{id}", chirps_handler.GetOneChirp())
+	})
 
 	s := &http.Server{
 		Addr:    ":" + port,
-		Handler: mux,
+		Handler: r,
 	}
 
 	log.Printf("Serving files from %s on port: %s\n", filepathRoot, port)
