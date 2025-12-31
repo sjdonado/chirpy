@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"sort"
 	"strings"
 
 	"github.com/google/uuid"
@@ -89,19 +88,11 @@ func (h *ChirpsHandler) QueryChirps() http.HandlerFunc {
 			qUserID = uuid.NullUUID{UUID: id, Valid: true}
 		}
 
-		chirps, err := h.queries.QueryChirps(r.Context(), qUserID)
+		chirps, err := h.queries.QueryChirps(r.Context(), database.QueryChirpsParams{UserID: qUserID, Sort: qSort})
 		if err != nil {
 			api.RespondWithError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
-
-		sort.Slice(chirps, func(i, j int) bool {
-			if qSort == "desc" {
-				return chirps[i].CreatedAt.After(chirps[j].CreatedAt)
-			} else {
-				return chirps[i].CreatedAt.Before(chirps[j].CreatedAt)
-			}
-		})
 
 		serializedChirps := []serializer.Chirp{}
 		for _, chirp := range chirps {
