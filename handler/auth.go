@@ -104,3 +104,33 @@ func (h *AuthHandler) RefreshToken() http.Handler {
 		})
 	})
 }
+
+func (h *AuthHandler) RevokeToken() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		rawRefreshToken, err := api.GetBearerToken(r.Header)
+		if err != nil {
+			api.RespondWithError(w, http.StatusUnauthorized, err.Error())
+			return
+		}
+
+		refreshToken, err := h.queries.GetRefreshtoken(r.Context(), rawRefreshToken)
+		if err != nil {
+			api.RespondWithError(w, http.StatusUnauthorized, err.Error())
+			return
+		}
+
+		// already revoked
+		if refreshToken.RevokedAt.Valid {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		err = h.queries.RevokeRefreshToken(r.Context(), rawRefreshToken)
+		if err != nil {
+			api.RespondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+	})
+}

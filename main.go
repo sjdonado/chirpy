@@ -43,6 +43,7 @@ func main() {
 
 	mux.Handle("POST /api/login", auth_handler.Login())
 	mux.Handle("POST /api/refresh", auth_handler.RefreshToken())
+	mux.Handle("POST /api/revoke", auth_handler.RevokeToken())
 
 	mux.Handle("POST /api/users", users_handler.CreateUser())
 
