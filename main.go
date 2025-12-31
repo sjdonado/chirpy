@@ -2,8 +2,11 @@ package main
 
 import (
 	"chirpy/handler"
+	"chirpy/internal/database"
+	"database/sql"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
@@ -16,23 +19,31 @@ func main() {
 	filepathRoot := http.Dir(".")
 	port := "8080"
 
-	cfg, cleanup, err := handler.NewApiConfig()
+	dbURL := os.Getenv("DB_URL")
+
+	db, err := sql.Open("postgres", dbURL)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer cleanup()
+	defer db.Close()
 
-	mux.Handle("GET /admin/metrics", cfg.GetMetrics())
-	mux.Handle("POST /admin/reset", cfg.ResetMetrics())
+	queries := database.New(db)
 
-	mux.Handle("/app/", cfg.MiddlewareMetricsInc(http.StripPrefix("/app", http.FileServer(filepathRoot))))
+	metrics_handler := handler.NewMetricsHandler(queries)
+	users_handler := handler.NewUsersHandler(queries)
+	chirps_handler := handler.NewChirpsHandler(queries)
 
-	mux.Handle("POST /api/users", cfg.CreateUser())
-	mux.Handle("POST /api/login", cfg.Login())
+	mux.Handle("GET /admin/metrics", metrics_handler.GetMetrics())
+	mux.Handle("POST /admin/reset", metrics_handler.ResetMetrics())
 
-	mux.Handle("POST /api/chirps", cfg.CreateChirp())
-	mux.Handle("GET /api/chirps", cfg.GetAllChirps())
-	mux.Handle("GET /api/chirps/{id}", cfg.GetOneChirp())
+	mux.Handle("/app/", metrics_handler.MiddlewareMetricsInc(http.StripPrefix("/app", http.FileServer(filepathRoot))))
+
+	mux.Handle("POST /api/users", users_handler.CreateUser())
+	mux.Handle("POST /api/login", users_handler.Login())
+
+	mux.Handle("POST /api/chirps", chirps_handler.CreateChirp())
+	mux.Handle("GET /api/chirps", chirps_handler.GetAllChirps())
+	mux.Handle("GET /api/chirps/{id}", chirps_handler.GetOneChirp())
 
 	mux.HandleFunc("GET /api/healthz", handler.GetHealthz)
 
