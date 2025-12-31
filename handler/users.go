@@ -8,6 +8,8 @@ import (
 	"chirpy/serializer"
 	"encoding/json"
 	"net/http"
+
+	"github.com/google/uuid"
 )
 
 type UsersHandler struct {
@@ -90,5 +92,51 @@ func (h *UsersHandler) UpdateUser() http.HandlerFunc {
 		}
 
 		api.RespondWithJSON(w, http.StatusOK, serializer.SerializeUser(user))
+	}
+}
+
+func (h *UsersHandler) UpgradeUser() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		body := json.NewDecoder(r.Body)
+		defer r.Body.Close()
+
+		payload := struct {
+			Event string `json:"event"`
+			Data  struct {
+				UserID uuid.UUID `json:"user_id"`
+			} `json:"data"`
+		}{}
+
+		if err := body.Decode(&payload); err != nil {
+			api.RespondWithError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		if payload.Event != "user.upgraded" {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		user, err := h.queries.GetUser(r.Context(), payload.Data.UserID)
+		if err != nil {
+			api.RespondWithError(w, http.StatusNotFound, err.Error())
+			return
+		}
+
+		if user.IsChirpyRed {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+
+		_, err = h.queries.UpgradeUser(r.Context(), database.UpgradeUserParams{
+			ID:          payload.Data.UserID,
+			IsChirpyRed: true,
+		})
+		if err != nil {
+			api.RespondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
 	}
 }

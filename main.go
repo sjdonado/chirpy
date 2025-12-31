@@ -65,6 +65,8 @@ func main() {
 		r.With(auth_middleware.Authenticated).Delete("/{id}", chirps_handler.DeleteChrip())
 	})
 
+	r.Post("/api/polka/webhooks", users_handler.UpgradeUser())
+
 	s := &http.Server{
 		Addr:    ":" + port,
 		Handler: r,

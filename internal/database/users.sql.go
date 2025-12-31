@@ -43,6 +43,24 @@ func (q *Queries) DeleteAllUsers(ctx context.Context) error {
 	return err
 }
 
+const getUser = `-- name: GetUser :one
+SELECT id, email, created_at, updated_at, hashed_password, is_chirpy_red FROM users WHERE id = $1 LIMIT 1
+`
+
+func (q *Queries) GetUser(ctx context.Context, id uuid.UUID) (User, error) {
+	row := q.db.QueryRowContext(ctx, getUser, id)
+	var i User
+	err := row.Scan(
+		&i.ID,
+		&i.Email,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.HashedPassword,
+		&i.IsChirpyRed,
+	)
+	return i, err
+}
+
 const getUserByEmail = `-- name: GetUserByEmail :one
 SELECT id, email, created_at, updated_at, hashed_password, is_chirpy_red FROM users WHERE email = $1 LIMIT 1
 `
@@ -62,7 +80,7 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 }
 
 const updateUser = `-- name: UpdateUser :one
-UPDATE users SET email = $2, hashed_password = $3 WHERE id = $1 RETURNING id, email, created_at, updated_at, hashed_password, is_chirpy_red
+UPDATE users SET email = $2, hashed_password = $3, updated_at = NOW() WHERE id = $1 RETURNING id, email, created_at, updated_at, hashed_password, is_chirpy_red
 `
 
 type UpdateUserParams struct {
@@ -85,17 +103,17 @@ func (q *Queries) UpdateUser(ctx context.Context, arg UpdateUserParams) (User, e
 	return i, err
 }
 
-const updateUserChirpyRed = `-- name: UpdateUserChirpyRed :one
-UPDATE users SET is_chirpy_red = $2 WHERE id = $1 RETURNING id, email, created_at, updated_at, hashed_password, is_chirpy_red
+const upgradeUser = `-- name: UpgradeUser :one
+UPDATE users SET is_chirpy_red = $2, updated_at = NOW() WHERE id = $1 RETURNING id, email, created_at, updated_at, hashed_password, is_chirpy_red
 `
 
-type UpdateUserChirpyRedParams struct {
+type UpgradeUserParams struct {
 	ID          uuid.UUID
 	IsChirpyRed bool
 }
 
-func (q *Queries) UpdateUserChirpyRed(ctx context.Context, arg UpdateUserChirpyRedParams) (User, error) {
-	row := q.db.QueryRowContext(ctx, updateUserChirpyRed, arg.ID, arg.IsChirpyRed)
+func (q *Queries) UpgradeUser(ctx context.Context, arg UpgradeUserParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, upgradeUser, arg.ID, arg.IsChirpyRed)
 	var i User
 	err := row.Scan(
 		&i.ID,
