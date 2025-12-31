@@ -1,8 +1,9 @@
 package handler
 
 import (
+	"chirpy/internal/api"
 	"chirpy/internal/database"
-	"chirpy/lib"
+	"chirpy/middleware"
 	"chirpy/serializer"
 	"database/sql"
 	"encoding/json"
@@ -40,28 +41,33 @@ func (h *ChirpsHandler) CreateChirp() http.Handler {
 		defer r.Body.Close()
 
 		payload := struct {
-			Body   string    `json:"body"`
-			UserID uuid.UUID `json:"user_id"`
+			Body string `json:"body"`
 		}{}
 
 		if err := body.Decode(&payload); err != nil {
 			log.Printf("Error decoding JSON: %v", err)
-			lib.RespondWithError(w, http.StatusBadRequest, "Something went wrong")
+			api.RespondWithError(w, http.StatusBadRequest, "Something went wrong")
 			return
 		}
 
 		if len(payload.Body) > 140 {
-			lib.RespondWithError(w, http.StatusBadRequest, "Chirp is too long")
+			api.RespondWithError(w, http.StatusBadRequest, "Chirp is too long")
 			return
 		}
 
-		chirp, err := h.queries.CreateChirp(r.Context(), database.CreateChirpParams{Body: replaceNotAllowedWords(payload.Body), UserID: payload.UserID})
+		userID, err := middleware.GetUserIDFromContext(r.Context())
 		if err != nil {
-			lib.RespondWithError(w, http.StatusInternalServerError, err.Error())
+			api.RespondWithError(w, http.StatusBadRequest, "User ID not found in context")
 			return
 		}
 
-		lib.RespondWithJSON(w, http.StatusCreated, serializer.SerializeChirp(chirp))
+		chirp, err := h.queries.CreateChirp(r.Context(), database.CreateChirpParams{Body: replaceNotAllowedWords(payload.Body), UserID: userID})
+		if err != nil {
+			api.RespondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		api.RespondWithJSON(w, http.StatusCreated, serializer.SerializeChirp(chirp))
 	})
 }
 
@@ -69,7 +75,7 @@ func (h *ChirpsHandler) GetAllChirps() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		chirps, err := h.queries.GetAllChirps(r.Context())
 		if err != nil {
-			lib.RespondWithError(w, http.StatusInternalServerError, err.Error())
+			api.RespondWithError(w, http.StatusInternalServerError, err.Error())
 			return
 		}
 
@@ -78,7 +84,7 @@ func (h *ChirpsHandler) GetAllChirps() http.Handler {
 			serializedChirps = append(serializedChirps, serializer.SerializeChirp(chirp))
 		}
 
-		lib.RespondWithJSON(w, http.StatusOK, serializedChirps)
+		api.RespondWithJSON(w, http.StatusOK, serializedChirps)
 	})
 }
 
@@ -86,7 +92,7 @@ func (h *ChirpsHandler) GetOneChirp() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(r.PathValue("id"))
 		if err != nil {
-			lib.RespondWithError(w, http.StatusBadRequest, "Invalid ID")
+			api.RespondWithError(w, http.StatusBadRequest, "Invalid ID")
 			return
 		}
 
@@ -94,13 +100,13 @@ func (h *ChirpsHandler) GetOneChirp() http.Handler {
 		if err != nil {
 			switch err {
 			case sql.ErrNoRows:
-				lib.RespondWithError(w, http.StatusNotFound, "Chirp not found")
+				api.RespondWithError(w, http.StatusNotFound, "Chirp not found")
 			default:
-				lib.RespondWithError(w, http.StatusNotFound, err.Error())
+				api.RespondWithError(w, http.StatusNotFound, err.Error())
 			}
 			return
 		}
 
-		lib.RespondWithJSON(w, http.StatusOK, serializer.SerializeChirp(chirp))
+		api.RespondWithJSON(w, http.StatusOK, serializer.SerializeChirp(chirp))
 	})
 }
