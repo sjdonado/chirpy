@@ -19,9 +19,7 @@ func main() {
 	filepathRoot := http.Dir(".")
 	port := "8080"
 
-	dbURL := os.Getenv("DB_URL")
-
-	db, err := sql.Open("postgres", dbURL)
+	db, err := sql.Open("postgres", os.Getenv("DB_URL"))
 	if err != nil {
 		log.Fatal(err)
 	}

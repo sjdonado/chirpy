@@ -7,6 +7,8 @@ import (
 	"chirpy/serializer"
 	"encoding/json"
 	"net/http"
+	"os"
+	"time"
 )
 
 type UsersHandler struct {
@@ -57,8 +59,9 @@ func (h *UsersHandler) Login() http.Handler {
 		defer r.Body.Close()
 
 		payload := struct {
-			Email    string `json:"email"`
-			Password string `json:"password"`
+			Email            string `json:"email"`
+			Password         string `json:"password"`
+			ExpiresInSeconds *int   `json:"expires_in_seconds,omitempty"`
 		}{}
 
 		if err := body.Decode(&payload); err != nil {
@@ -76,6 +79,17 @@ func (h *UsersHandler) Login() http.Handler {
 			return
 		}
 
-		lib.RespondWithJSON(w, http.StatusOK, serializer.SerializeUser(user))
+		expiresIn := time.Hour
+		if payload.ExpiresInSeconds != nil {
+			expiresIn = time.Duration(*payload.ExpiresInSeconds) * time.Second
+		}
+
+		token, err := auth.MakeJWT(user.ID, os.Getenv("JWT_SECRET"), expiresIn)
+		if err != nil {
+			lib.RespondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		lib.RespondWithJSON(w, http.StatusOK, serializer.SerializeLoginResponse(user, token))
 	})
 }
