@@ -12,9 +12,7 @@ import (
 )
 
 const createChirp = `-- name: CreateChirp :one
-INSERT INTO chirps (user_id, body)
-VALUES ($1, $2)
-RETURNING id, user_id, body, created_at, updated_at
+INSERT INTO chirps (user_id, body) VALUES ($1, $2) RETURNING id, user_id, body, created_at, updated_at
 `
 
 type CreateChirpParams struct {
@@ -33,6 +31,15 @@ func (q *Queries) CreateChirp(ctx context.Context, arg CreateChirpParams) (Chirp
 		&i.UpdatedAt,
 	)
 	return i, err
+}
+
+const deleteChirp = `-- name: DeleteChirp :exec
+DELETE FROM chirps WHERE id = $1
+`
+
+func (q *Queries) DeleteChirp(ctx context.Context, id uuid.UUID) error {
+	_, err := q.db.ExecContext(ctx, deleteChirp, id)
+	return err
 }
 
 const getAllChirps = `-- name: GetAllChirps :many

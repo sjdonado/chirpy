@@ -47,7 +47,7 @@ func main() {
 		r.Post("/reset", metrics_handler.ResetMetrics())
 	})
 
-	r.Get("api/healthz", handler.GetHealthz)
+	r.Get("/api/healthz", handler.GetHealthz)
 
 	r.Post("/api/login", auth_handler.Login())
 	r.Post("/api/refresh", auth_handler.RefreshToken())
@@ -59,10 +59,10 @@ func main() {
 	})
 
 	r.Route("/api/chirps", func(r chi.Router) {
-		r.Use(auth_middleware.Authenticated)
-		r.Post("/", chirps_handler.CreateChirp())
 		r.Get("/", chirps_handler.GetAllChirps())
 		r.Get("/{id}", chirps_handler.GetOneChirp())
+		r.With(auth_middleware.Authenticated).Post("/", chirps_handler.CreateChirp())
+		r.With(auth_middleware.Authenticated).Delete("/{id}", chirps_handler.DeleteChrip())
 	})
 
 	s := &http.Server{

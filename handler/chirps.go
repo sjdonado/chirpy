@@ -110,3 +110,43 @@ func (h *ChirpsHandler) GetOneChirp() http.HandlerFunc {
 		api.RespondWithJSON(w, http.StatusOK, serializer.SerializeChirp(chirp))
 	}
 }
+
+func (h *ChirpsHandler) DeleteChrip() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		id, err := uuid.Parse(r.PathValue("id"))
+		if err != nil {
+			api.RespondWithError(w, http.StatusBadRequest, "Invalid ID")
+			return
+		}
+
+		userID, err := middleware.GetUserIDFromContext(r.Context())
+		if err != nil {
+			api.RespondWithError(w, http.StatusInternalServerError, "User ID not found in context")
+			return
+		}
+
+		chirp, err := h.queries.GetOneChirp(r.Context(), id)
+		if err != nil {
+			switch err {
+			case sql.ErrNoRows:
+				api.RespondWithError(w, http.StatusNotFound, "Chirp not found")
+			default:
+				api.RespondWithError(w, http.StatusNotFound, err.Error())
+			}
+			return
+		}
+
+		if chirp.UserID != userID {
+			api.RespondWithError(w, http.StatusForbidden, "Unauthorized")
+			return
+		}
+
+		err = h.queries.DeleteChirp(r.Context(), id)
+		if err != nil {
+			api.RespondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+	}
+}
