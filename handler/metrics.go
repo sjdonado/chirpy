@@ -1,8 +1,8 @@
 package handler
 
 import (
+	"chirpy/internal/api"
 	"chirpy/internal/database"
-	"chirpy/lib"
 	"chirpy/middleware"
 	"fmt"
 	"io"
@@ -17,7 +17,7 @@ type MetricsHandler struct {
 }
 
 func NewMetricsHandler(queries *database.Queries, middleware *middleware.MetricMiddleware) *MetricsHandler {
-	return &MetricsHandler{queries: queries}
+	return &MetricsHandler{queries: queries, middleware: middleware}
 }
 
 func (h *MetricsHandler) GetMetrics() http.Handler {
@@ -42,7 +42,7 @@ func (h *MetricsHandler) ResetMetrics() http.Handler {
 		if os.Getenv("PLATFORM") == "dev" {
 			err := h.queries.DeleteAllUsers(r.Context())
 			if err != nil {
-				lib.RespondWithError(w, http.StatusInternalServerError, err.Error())
+				api.RespondWithError(w, http.StatusInternalServerError, err.Error())
 			}
 		}
 		w.WriteHeader(http.StatusOK)

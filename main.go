@@ -29,6 +29,7 @@ func main() {
 	queries := database.New(db)
 
 	metric_middleware := middleware.NewMetricMiddleware()
+	auth_middleware := middleware.NewAuthMiddleware(queries)
 
 	metrics_handler := handler.NewMetricsHandler(queries, metric_middleware)
 	users_handler := handler.NewUsersHandler(queries)
@@ -42,9 +43,9 @@ func main() {
 	mux.Handle("POST /api/users", users_handler.CreateUser())
 	mux.Handle("POST /api/login", users_handler.Login())
 
-	mux.Handle("POST /api/chirps", chirps_handler.CreateChirp())
-	mux.Handle("GET /api/chirps", chirps_handler.GetAllChirps())
-	mux.Handle("GET /api/chirps/{id}", chirps_handler.GetOneChirp())
+	mux.Handle("POST /api/chirps", auth_middleware.Authenticated(chirps_handler.CreateChirp()))
+	mux.Handle("GET /api/chirps", auth_middleware.Authenticated(chirps_handler.GetAllChirps()))
+	mux.Handle("GET /api/chirps/{id}", auth_middleware.Authenticated(chirps_handler.GetOneChirp()))
 
 	mux.HandleFunc("GET /api/healthz", handler.GetHealthz)
 
