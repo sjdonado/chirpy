@@ -17,8 +17,8 @@ type User struct {
 func SerializeUser(user database.User) User {
 	return User{
 		ID:        user.ID,
-		CreatedAt: user.CreatedAt.Time,
-		UpdatedAt: user.UpdatedAt.Time,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
 		Email:     user.Email,
 	}
 }
@@ -34,8 +34,8 @@ type LoginResponse struct {
 func SerializeLoginResponse(user database.User, token string) LoginResponse {
 	return LoginResponse{
 		ID:        user.ID,
-		CreatedAt: user.CreatedAt.Time,
-		UpdatedAt: user.UpdatedAt.Time,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
 		Email:     user.Email,
 		Token:     token,
 	}

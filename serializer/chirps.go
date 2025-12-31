@@ -18,8 +18,8 @@ type Chirp struct {
 func SerializeChirp(chirp database.Chirp) Chirp {
 	return Chirp{
 		ID:        chirp.ID,
-		CreatedAt: chirp.CreatedAt.Time,
-		UpdatedAt: chirp.UpdatedAt.Time,
+		CreatedAt: chirp.CreatedAt,
+		UpdatedAt: chirp.UpdatedAt,
 		Body:      chirp.Body,
 		UserID:    chirp.UserID.String(),
 	}
