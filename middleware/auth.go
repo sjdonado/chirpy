@@ -1,13 +1,13 @@
 package middleware
 
 import (
+	"chirpy/internal/api"
 	"chirpy/internal/auth"
 	"chirpy/internal/database"
 	"context"
 	"fmt"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/google/uuid"
 )
@@ -26,7 +26,7 @@ func NewAuthMiddleware(queries *database.Queries) *AuthMiddleware {
 
 func (m *AuthMiddleware) Authenticated(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		bearerToken, err := getBearerToken(r.Header)
+		bearerToken, err := api.GetBearerToken(r.Header)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
@@ -49,15 +49,4 @@ func GetUserIDFromContext(ctx context.Context) (uuid.UUID, error) {
 		return uuid.Nil, fmt.Errorf("User ID not found in context")
 	}
 	return userID, nil
-}
-
-func getBearerToken(headers http.Header) (string, error) {
-	authHeader := strings.TrimSpace(headers.Get("Authorization"))
-
-	token := strings.TrimPrefix(authHeader, "Bearer ")
-	if token == "" {
-		return "", fmt.Errorf("Missing bearer token")
-	}
-
-	return token, nil
 }

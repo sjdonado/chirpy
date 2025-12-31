@@ -32,6 +32,7 @@ func main() {
 	auth_middleware := middleware.NewAuthMiddleware(queries)
 
 	metrics_handler := handler.NewMetricsHandler(queries)
+	auth_handler := handler.NewAuthHandler(queries)
 	users_handler := handler.NewUsersHandler(queries)
 	chirps_handler := handler.NewChirpsHandler(queries)
 
@@ -40,8 +41,10 @@ func main() {
 
 	mux.Handle("/app/", metric_middleware.FileServerHits(http.StripPrefix("/app", http.FileServer(filepathRoot))))
 
+	mux.Handle("POST /api/login", auth_handler.Login())
+	mux.Handle("POST /api/refresh", auth_handler.RefreshToken())
+
 	mux.Handle("POST /api/users", users_handler.CreateUser())
-	mux.Handle("POST /api/login", users_handler.Login())
 
 	mux.Handle("POST /api/chirps", auth_middleware.Authenticated(chirps_handler.CreateChirp()))
 	mux.Handle("GET /api/chirps", auth_middleware.Authenticated(chirps_handler.GetAllChirps()))

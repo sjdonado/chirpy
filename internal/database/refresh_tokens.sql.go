@@ -29,19 +29,20 @@ func (q *Queries) CreateRefreshToken(ctx context.Context, arg CreateRefreshToken
 	return token, err
 }
 
-const getUserFromRefreshToken = `-- name: GetUserFromRefreshToken :one
-SELECT id, email, created_at, updated_at, hashed_password FROM users WHERE id = (SELECT user_id FROM refresh_tokens WHERE token = $1) LIMIT 1
+const getRefreshtoken = `-- name: GetRefreshtoken :one
+SELECT token, user_id, expires_at, revoked_at, created_at, updated_at FROM refresh_tokens WHERE token = $1 LIMIT 1
 `
 
-func (q *Queries) GetUserFromRefreshToken(ctx context.Context, token string) (User, error) {
-	row := q.db.QueryRowContext(ctx, getUserFromRefreshToken, token)
-	var i User
+func (q *Queries) GetRefreshtoken(ctx context.Context, token string) (RefreshToken, error) {
+	row := q.db.QueryRowContext(ctx, getRefreshtoken, token)
+	var i RefreshToken
 	err := row.Scan(
-		&i.ID,
-		&i.Email,
+		&i.Token,
+		&i.UserID,
+		&i.ExpiresAt,
+		&i.RevokedAt,
 		&i.CreatedAt,
 		&i.UpdatedAt,
-		&i.HashedPassword,
 	)
 	return i, err
 }
