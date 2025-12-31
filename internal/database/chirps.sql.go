@@ -42,12 +42,12 @@ func (q *Queries) DeleteChirp(ctx context.Context, id uuid.UUID) error {
 	return err
 }
 
-const getAllChirps = `-- name: GetAllChirps :many
-SELECT id, user_id, body, created_at, updated_at FROM chirps ORDER BY created_at ASC
+const filterChirps = `-- name: FilterChirps :many
+SELECT id, user_id, body, created_at, updated_at FROM chirps WHERE user_id = $1 ORDER BY created_at ASC
 `
 
-func (q *Queries) GetAllChirps(ctx context.Context) ([]Chirp, error) {
-	rows, err := q.db.QueryContext(ctx, getAllChirps)
+func (q *Queries) FilterChirps(ctx context.Context, userID uuid.UUID) ([]Chirp, error) {
+	rows, err := q.db.QueryContext(ctx, filterChirps, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -75,12 +75,12 @@ func (q *Queries) GetAllChirps(ctx context.Context) ([]Chirp, error) {
 	return items, nil
 }
 
-const getOneChirp = `-- name: GetOneChirp :one
+const getChirp = `-- name: GetChirp :one
 SELECT id, user_id, body, created_at, updated_at FROM chirps WHERE id = $1 LIMIT 1
 `
 
-func (q *Queries) GetOneChirp(ctx context.Context, id uuid.UUID) (Chirp, error) {
-	row := q.db.QueryRowContext(ctx, getOneChirp, id)
+func (q *Queries) GetChirp(ctx context.Context, id uuid.UUID) (Chirp, error) {
+	row := q.db.QueryRowContext(ctx, getChirp, id)
 	var i Chirp
 	err := row.Scan(
 		&i.ID,

@@ -71,9 +71,16 @@ func (h *ChirpsHandler) CreateChirp() http.HandlerFunc {
 	}
 }
 
-func (h *ChirpsHandler) GetAllChirps() http.HandlerFunc {
+func (h *ChirpsHandler) FilterChirps() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		chirps, err := h.queries.GetAllChirps(r.Context())
+		s := r.URL.Query().Get("author_id")
+		user_id, err := uuid.Parse(s)
+		if s != "" && err != nil {
+			api.RespondWithError(w, http.StatusBadRequest, "Invalid author ID")
+			return
+		}
+
+		chirps, err := h.queries.FilterChirps(r.Context(), user_id)
 		if err != nil {
 			api.RespondWithError(w, http.StatusInternalServerError, err.Error())
 			return
@@ -88,7 +95,7 @@ func (h *ChirpsHandler) GetAllChirps() http.HandlerFunc {
 	}
 }
 
-func (h *ChirpsHandler) GetOneChirp() http.HandlerFunc {
+func (h *ChirpsHandler) GetChirp() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id, err := uuid.Parse(r.PathValue("id"))
 		if err != nil {
@@ -96,7 +103,7 @@ func (h *ChirpsHandler) GetOneChirp() http.HandlerFunc {
 			return
 		}
 
-		chirp, err := h.queries.GetOneChirp(r.Context(), id)
+		chirp, err := h.queries.GetChirp(r.Context(), id)
 		if err != nil {
 			switch err {
 			case sql.ErrNoRows:
@@ -125,7 +132,7 @@ func (h *ChirpsHandler) DeleteChrip() http.HandlerFunc {
 			return
 		}
 
-		chirp, err := h.queries.GetOneChirp(r.Context(), id)
+		chirp, err := h.queries.GetChirp(r.Context(), id)
 		if err != nil {
 			switch err {
 			case sql.ErrNoRows:
