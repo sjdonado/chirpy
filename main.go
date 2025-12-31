@@ -2,26 +2,25 @@ package main
 
 import (
 	"chirpy/handler"
+	"chirpy/internal/api"
 	"chirpy/internal/database"
 	"chirpy/middleware"
 	"database/sql"
 	"log"
 	"net/http"
-	"os"
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
 
 func main() {
-	godotenv.Load()
-
 	filepathRoot := http.Dir(".")
 	port := "8080"
 
-	db, err := sql.Open("postgres", os.Getenv("DB_URL"))
+	apiConfig := api.NewConfig()
+
+	db, err := sql.Open("postgres", apiConfig.DBURL)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -30,11 +29,11 @@ func main() {
 	queries := database.New(db)
 
 	metric_middleware := middleware.NewMetricMiddleware()
-	auth_middleware := middleware.NewAuthMiddleware(queries)
+	auth_middleware := middleware.NewAuthMiddleware(apiConfig, queries)
 
-	metrics_handler := handler.NewMetricsHandler(queries)
-	auth_handler := handler.NewAuthHandler(queries)
-	users_handler := handler.NewUsersHandler(queries)
+	metrics_handler := handler.NewMetricsHandler(apiConfig, queries)
+	auth_handler := handler.NewAuthHandler(apiConfig, queries)
+	users_handler := handler.NewUsersHandler(apiConfig, queries)
 	chirps_handler := handler.NewChirpsHandler(queries)
 
 	r := chi.NewRouter()

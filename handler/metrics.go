@@ -8,15 +8,15 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"os"
 )
 
 type MetricsHandler struct {
+	cfg     *api.Config
 	queries *database.Queries
 }
 
-func NewMetricsHandler(queries *database.Queries) *MetricsHandler {
-	return &MetricsHandler{queries: queries}
+func NewMetricsHandler(config *api.Config, queries *database.Queries) *MetricsHandler {
+	return &MetricsHandler{cfg: config, queries: queries}
 }
 
 func (h *MetricsHandler) GetMetrics() http.HandlerFunc {
@@ -43,7 +43,7 @@ func (h *MetricsHandler) GetMetrics() http.HandlerFunc {
 
 func (h *MetricsHandler) ResetMetrics() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if os.Getenv("PLATFORM") == "dev" {
+		if h.cfg.Platform == "dev" {
 			err := h.queries.DeleteAllUsers(r.Context())
 			if err != nil {
 				api.RespondWithError(w, http.StatusInternalServerError, err.Error())

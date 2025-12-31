@@ -7,16 +7,16 @@ import (
 	"chirpy/serializer"
 	"encoding/json"
 	"net/http"
-	"os"
 	"time"
 )
 
 type AuthHandler struct {
+	cfg     *api.Config
 	queries *database.Queries
 }
 
-func NewAuthHandler(queries *database.Queries) *AuthHandler {
-	return &AuthHandler{queries: queries}
+func NewAuthHandler(config *api.Config, queries *database.Queries) *AuthHandler {
+	return &AuthHandler{cfg: config, queries: queries}
 }
 
 func (h *AuthHandler) Login() http.HandlerFunc {
@@ -44,7 +44,7 @@ func (h *AuthHandler) Login() http.HandlerFunc {
 			return
 		}
 
-		accessToken, err := auth.MakeJWT(user.ID, os.Getenv("JWT_SECRET"), time.Hour)
+		accessToken, err := auth.MakeJWT(user.ID, h.cfg.JWTSecret, time.Hour)
 		if err != nil {
 			api.RespondWithError(w, http.StatusInternalServerError, err.Error())
 			return
@@ -93,7 +93,7 @@ func (h *AuthHandler) RefreshToken() http.HandlerFunc {
 			return
 		}
 
-		accessToken, err := auth.MakeJWT(refreshToken.UserID, os.Getenv("JWT_SECRET"), time.Hour)
+		accessToken, err := auth.MakeJWT(refreshToken.UserID, h.cfg.JWTSecret, time.Hour)
 		if err != nil {
 			api.RespondWithError(w, http.StatusInternalServerError, err.Error())
 			return

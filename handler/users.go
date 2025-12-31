@@ -13,11 +13,12 @@ import (
 )
 
 type UsersHandler struct {
+	cfg     *api.Config
 	queries *database.Queries
 }
 
-func NewUsersHandler(queries *database.Queries) *UsersHandler {
-	return &UsersHandler{queries: queries}
+func NewUsersHandler(config *api.Config, queries *database.Queries) *UsersHandler {
+	return &UsersHandler{cfg: config, queries: queries}
 }
 
 func (h *UsersHandler) CreateUser() http.HandlerFunc {

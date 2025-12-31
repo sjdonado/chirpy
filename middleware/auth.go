@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 
 	"github.com/google/uuid"
 )
@@ -17,11 +16,12 @@ type authCtxKey string
 const userIDKey authCtxKey = "userID"
 
 type AuthMiddleware struct {
+	cfg     *api.Config
 	queries *database.Queries
 }
 
-func NewAuthMiddleware(queries *database.Queries) *AuthMiddleware {
-	return &AuthMiddleware{queries: queries}
+func NewAuthMiddleware(config *api.Config, queries *database.Queries) *AuthMiddleware {
+	return &AuthMiddleware{cfg: config, queries: queries}
 }
 
 func (m *AuthMiddleware) Authenticated(next http.Handler) http.Handler {
@@ -32,7 +32,7 @@ func (m *AuthMiddleware) Authenticated(next http.Handler) http.Handler {
 			return
 		}
 
-		userID, err := auth.ValidateJWT(bearerToken, os.Getenv("JWT_SECRET"))
+		userID, err := auth.ValidateJWT(bearerToken, m.cfg.JWTSecret)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
